@@ -29,6 +29,8 @@ class ReviewData(BaseModel):
     summary: str
     risks: List[RiskItem]
     positive_points: Optional[List[str]] = Field(None, description="正面评价")
+    total_files: Optional[int] = Field(None, description="变更文件总数")
+    processing_time: Optional[float] = Field(None, description="处理时间（秒）")
 
 
 class PRReviewResponse(BaseModel):

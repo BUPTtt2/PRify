@@ -1,4 +1,4 @@
-import { checkHealth, submitReview, isValidGitHubPRUrl } from './api.js';
+import { checkHealth, submitReview, isValidGitHubPRUrl, copyToClipboard } from './api.js';
 
 const healthStatusEl = document.getElementById('health-status');
 const reviewForm = document.getElementById('review-form');
@@ -7,11 +7,24 @@ const analyzeBtn = document.getElementById('analyze-btn');
 const loadingSection = document.getElementById('loading-section');
 const resultSection = document.getElementById('result-section');
 let toastContainer = null;
+let isSubmitting = false;
 
 async function init() {
+  initThemeToggle();
   await checkHealthStatus();
   setupEventListeners();
   initToastContainer();
+}
+
+function initThemeToggle() {
+  const themeToggle = document.getElementById('theme-toggle');
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem('dark-mode', isDark);
+      console.log('[Main] 主题切换:', isDark ? '深色模式' : '浅色模式');
+    });
+  }
 }
 
 function initToastContainer() {
@@ -24,21 +37,33 @@ function initToastContainer() {
 async function checkHealthStatus() {
   try {
     const response = await checkHealth();
-    if (response.status === 'ok') {
+    console.log('[Main] 健康检查响应:', response);
+    
+    if (response && response.status === 'ok') {
       healthStatusEl.innerHTML = `
         <div class="health-indicator">
           <div class="health-dot healthy"></div>
           <span class="text-stone-600">Online</span>
         </div>
       `;
+      console.log('[Main] ✅ 后端服务正常');
+    } else {
+      healthStatusEl.innerHTML = `
+        <div class="health-indicator">
+          <div class="health-dot unhealthy"></div>
+          <span class="text-stone-500">Degraded</span>
+        </div>
+      `;
     }
   } catch (error) {
+    console.error('[Main] ❌ 健康检查失败:', error);
     healthStatusEl.innerHTML = `
       <div class="health-indicator">
         <div class="health-dot unhealthy"></div>
         <span class="text-stone-500">Offline</span>
       </div>
     `;
+    showToast('无法连接到后端服务', 'error');
   }
 }
 
@@ -68,57 +93,44 @@ function validateUrlInput() {
 async function handleSubmit(e) {
   e.preventDefault();
   
+  if (isSubmitting) {
+    console.log('[Main] 正在提交中，忽略重复点击');
+    return;
+  }
+  
   const url = prUrlInput.value.trim();
   if (!url) {
-    showToast('Please provide a GitHub PR URL', 'warning');
+    showToast('请输入 GitHub PR URL', 'warning');
     return;
   }
 
   if (!isValidGitHubPRUrl(url)) {
-    showToast('Invalid GitHub PR URL format', 'error');
+    showToast('无效的 GitHub PR URL 格式', 'error');
     return;
   }
 
+  isSubmitting = true;
   showLoading(true);
 
   try {
+    console.log('[Main] 提交审查请求:', url);
     const response = await submitReview(url);
+    console.log('[Main] 收到响应:', response);
     
     if (response.success) {
-      if (response.data.total_files === 0) {
-        showToast('No changes found in this PR', 'warning');
-      }
+      console.log('[Main] ✅ 分析成功');
       renderResult(response.data);
     } else {
-      handleApiError(response.error);
+      console.error('[Main] ❌ 分析失败:', response.error);
+      showToast(response.error || '分析失败', 'error');
     }
   } catch (error) {
-    console.error(error);
-    showToast('Network error occurred. Please check your connection.', 'error');
+    console.error('[Main] ❌ 请求异常:', error);
+    showToast('网络错误，请检查网络连接', 'error');
   } finally {
+    isSubmitting = false;
     showLoading(false);
   }
-}
-
-function handleApiError(error) {
-  if (!error) {
-    showToast('Unknown error occurred', 'error');
-    return;
-  }
-  
-  const messages = {
-    'INVALID_URL': 'Invalid GitHub PR URL format',
-    'PR_NOT_FOUND': 'PR not found. Please check the URL.',
-    'RATE_LIMIT': 'API rate limit exceeded. Please try again later.',
-    'NETWORK_ERROR': 'Network connection failed.',
-    'TIMEOUT': 'Request timeout. Please try again.',
-    'UNKNOWN': error.message || 'Unknown error occurred'
-  };
-  
-  const message = messages[error.code] || messages['UNKNOWN'];
-  const details = error.details || '';
-  
-  showToast(message + (details ? `\n${details}` : ''), 'error');
 }
 
 function showToast(message, type = 'info') {
@@ -126,10 +138,10 @@ function showToast(message, type = 'info') {
   toast.className = `toast toast-${type} px-4 py-3 rounded-lg shadow-lg flex items-center space-x-3 fade-in max-w-sm`;
   
   const icons = {
-    success: '<svg class="w-5 h-5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>',
-    error: '<svg class="w-5 h-5 text-rose-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>',
-    warning: '<svg class="w-5 h-5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
-    info: '<svg class="w-5 h-5 text-sky-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>'
+    success: '<svg class="w-5 h-5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>',
+    error: '<svg class="w-5 h-5 text-rose-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>',
+    warning: '<svg class="w-5 h-5 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+    info: '<svg class="w-5 h-5 text-sky-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>'
   };
   
   toast.innerHTML = `
@@ -157,7 +169,6 @@ function showToast(message, type = 'info') {
 function showLoading(isLoading) {
   if (isLoading) {
     loadingSection.classList.remove('hidden');
-    loadingSection.classList.add('fade-in');
     resultSection.classList.add('hidden');
     analyzeBtn.disabled = true;
     prUrlInput.disabled = true;
@@ -333,9 +344,10 @@ function setupCopySuggestionListeners() {
   document.querySelectorAll('.copy-suggestion-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       const suggestion = btn.getAttribute('data-suggestion');
-      const success = await navigator.clipboard.writeText(suggestion);
+      
+      const result = await copyToClipboard(suggestion);
 
-      if (success !== false) {
+      if (result.success) {
         btn.innerHTML = `
           <svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M5 13l4 4L19 7"/>
@@ -349,6 +361,8 @@ function setupCopySuggestionListeners() {
             </svg>
           `;
         }, 2000);
+      } else {
+        showToast('复制失败，请手动复制', 'warning');
       }
     });
   });
@@ -372,8 +386,9 @@ ${risks.map(risk => `- ${risk.level.toUpperCase()}: [${risk.type}] ${risk.file}:
 Processed in ${processing_time}s
 `;
   
-  const success = await navigator.clipboard.writeText(report);
-  if (success) {
+  const result = await copyToClipboard(report);
+  
+  if (result.success) {
     const copyBtn = document.getElementById('copy-btn');
     copyBtn.innerHTML = `
       <svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -390,6 +405,8 @@ Processed in ${processing_time}s
         <span>Copy report</span>
       `;
     }, 2000);
+  } else {
+    showToast('复制失败，请手动复制', 'warning');
   }
 }
 

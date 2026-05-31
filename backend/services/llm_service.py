@@ -1,8 +1,8 @@
 import json
 import requests
 from typing import Dict, List, Any, Optional
-from backend.config import settings
-from backend.utils.exceptions import LLMError, TimeoutError
+from config import settings
+from utils.exceptions import LLMError, TimeoutError
 
 
 class LLMService:
@@ -16,8 +16,9 @@ class LLMService:
 请以JSON格式返回分析结果。"""
 
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or settings.deepseek_api_key
-        self.api_url = settings.deepseek_api_url
+        self.api_key = api_key or "ms-6930d9e1-7f37-47da-8dae-c0fecb94b849"
+        self.api_url = "https://api-inference.modelscope.cn/v1"
+        self.model = "deepseek-ai/DeepSeek-V3.2"
         self.timeout = settings.llm_timeout
 
     def _build_headers(self) -> Dict[str, str]:
@@ -28,7 +29,7 @@ class LLMService:
 
     def _build_payload(self, messages: List[Dict[str, str]], max_tokens: int = 2000) -> Dict[str, Any]:
         return {
-            "model": "deepseek-chat",
+            "model": self.model,
             "messages": messages,
             "max_tokens": max_tokens,
             "temperature": 0.3
@@ -53,10 +54,11 @@ class LLMService:
         
         try:
             response = requests.post(
-                self.api_url,
+                f"{self.api_url}/chat/completions",
                 headers=self._build_headers(),
                 json=payload,
-                timeout=self.timeout
+                timeout=self.timeout,
+                verify=False
             )
             response.raise_for_status()
             
@@ -91,6 +93,7 @@ class LLMService:
 请生成JSON格式的分析结果，包含：
 1. summary: 变更总结（100字以内）
 2. risks: 风险列表，每项包含level(高/中/低)、file、line(行号或范围)、type(security/logic/performance)、description、suggestion
+3. positive_points: 正面评价列表
 
 返回格式示例：
 {{
@@ -104,7 +107,8 @@ class LLMService:
             "description": "发现硬编码密钥",
             "suggestion": "使用环境变量替代"
         }}
-    ]
+    ],
+    "positive_points": ["代码结构清晰"]
 }}"""
 
         try:
@@ -146,6 +150,8 @@ class LLMService:
                 result["summary"] = "变更分析完成"
             if "risks" not in result:
                 result["risks"] = []
+            if "positive_points" not in result:
+                result["positive_points"] = []
             
             return result
         
@@ -153,6 +159,7 @@ class LLMService:
             return {
                 "summary": response[:200] if len(response) > 200 else response,
                 "risks": [],
+                "positive_points": [],
                 "parse_error": True
             }
 
