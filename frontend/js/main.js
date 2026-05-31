@@ -1,4 +1,4 @@
-import { checkHealth, submitReview } from './api.js';
+import { checkHealth, submitReview, isValidGitHubPRUrl } from './api.js';
 
 const healthStatusEl = document.getElementById('health-status');
 const reviewForm = document.getElementById('review-form');
@@ -6,10 +6,19 @@ const prUrlInput = document.getElementById('pr-url');
 const analyzeBtn = document.getElementById('analyze-btn');
 const loadingSection = document.getElementById('loading-section');
 const resultSection = document.getElementById('result-section');
+let toastContainer = null;
 
 async function init() {
   await checkHealthStatus();
   setupEventListeners();
+  initToastContainer();
+}
+
+function initToastContainer() {
+  toastContainer = document.createElement('div');
+  toastContainer.id = 'toast-container';
+  toastContainer.className = 'fixed top-6 right-6 z-50 space-y-3';
+  document.body.appendChild(toastContainer);
 }
 
 async function checkHealthStatus() {
@@ -35,6 +44,25 @@ async function checkHealthStatus() {
 
 function setupEventListeners() {
   reviewForm.addEventListener('submit', handleSubmit);
+  prUrlInput.addEventListener('input', validateUrlInput);
+}
+
+function validateUrlInput() {
+  const url = prUrlInput.value.trim();
+  
+  if (!url) {
+    prUrlInput.classList.remove('border-rose-300', 'border-emerald-300');
+    prUrlInput.classList.add('border-stone-200');
+    return;
+  }
+  
+  if (isValidGitHubPRUrl(url)) {
+    prUrlInput.classList.remove('border-stone-200', 'border-rose-300');
+    prUrlInput.classList.add('border-emerald-300', 'ring-2', 'ring-emerald-200');
+  } else {
+    prUrlInput.classList.remove('border-stone-200', 'border-emerald-300');
+    prUrlInput.classList.add('border-rose-300', 'ring-2', 'ring-rose-200');
+  }
 }
 
 async function handleSubmit(e) {
@@ -42,7 +70,12 @@ async function handleSubmit(e) {
   
   const url = prUrlInput.value.trim();
   if (!url) {
-    showSimpleAlert('Please provide a GitHub PR URL');
+    showToast('Please provide a GitHub PR URL', 'warning');
+    return;
+  }
+
+  if (!isValidGitHubPRUrl(url)) {
+    showToast('Invalid GitHub PR URL format', 'error');
     return;
   }
 
@@ -52,16 +85,73 @@ async function handleSubmit(e) {
     const response = await submitReview(url);
     
     if (response.success) {
+      if (response.data.total_files === 0) {
+        showToast('No changes found in this PR', 'warning');
+      }
       renderResult(response.data);
     } else {
-      showSimpleAlert('Analysis failed: ' + (response.error || 'Unknown error'));
+      handleApiError(response.error);
     }
   } catch (error) {
     console.error(error);
-    showSimpleAlert('Something went wrong. Please try again.');
+    showToast('Network error occurred. Please check your connection.', 'error');
   } finally {
     showLoading(false);
   }
+}
+
+function handleApiError(error) {
+  if (!error) {
+    showToast('Unknown error occurred', 'error');
+    return;
+  }
+  
+  const messages = {
+    'INVALID_URL': 'Invalid GitHub PR URL format',
+    'PR_NOT_FOUND': 'PR not found. Please check the URL.',
+    'RATE_LIMIT': 'API rate limit exceeded. Please try again later.',
+    'NETWORK_ERROR': 'Network connection failed.',
+    'TIMEOUT': 'Request timeout. Please try again.',
+    'UNKNOWN': error.message || 'Unknown error occurred'
+  };
+  
+  const message = messages[error.code] || messages['UNKNOWN'];
+  const details = error.details || '';
+  
+  showToast(message + (details ? `\n${details}` : ''), 'error');
+}
+
+function showToast(message, type = 'info') {
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type} px-4 py-3 rounded-lg shadow-lg flex items-center space-x-3 fade-in max-w-sm`;
+  
+  const icons = {
+    success: '<svg class="w-5 h-5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>',
+    error: '<svg class="w-5 h-5 text-rose-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>',
+    warning: '<svg class="w-5 h-5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+    info: '<svg class="w-5 h-5 text-sky-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>'
+  };
+  
+  toast.innerHTML = `
+    ${icons[type]}
+    <span class="text-sm font-medium">${message}</span>
+    <button class="toast-close ml-auto text-stone-400 hover:text-stone-600">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  `;
+  
+  toastContainer.appendChild(toast);
+  
+  toast.querySelector('.toast-close').addEventListener('click', () => {
+    toast.remove();
+  });
+  
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.classList.add('fade-out');
+      setTimeout(() => toast.remove(), 300);
+    }
+  }, 4000);
 }
 
 function showLoading(isLoading) {
@@ -78,10 +168,6 @@ function showLoading(isLoading) {
     prUrlInput.disabled = false;
     analyzeBtn.classList.remove('opacity-50', 'cursor-not-allowed');
   }
-}
-
-function showSimpleAlert(message) {
-  alert(message);
 }
 
 function renderResult(data) {
