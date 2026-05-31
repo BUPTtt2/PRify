@@ -1,14 +1,55 @@
 import { mockReviewResponse, mockHealthCheck, mockErrorResponses } from './mock.js';
 
+const API_BASE_URL = 'http://localhost:8000';
+const USE_MOCK_MODE = window.USE_MOCK === true;
+
 export async function checkHealth() {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(mockHealthCheck);
-    }, 500);
-  });
+  if (USE_MOCK_MODE) {
+    return mockHealthCheck;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/health`);
+    if (!response.ok) {
+      throw new Error('Health check failed');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Health check error:', error);
+    throw error;
+  }
 }
 
 export async function submitReview(url) {
+  if (USE_MOCK_MODE || url.includes('test:')) {
+    return handleMockReview(url);
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/review`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ pr_url: url }),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Request failed');
+    }
+
+    return data;
+  } catch (error) {
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      throw new Error('Network error: Unable to connect to server');
+    }
+    throw error;
+  }
+}
+
+function handleMockReview(url) {
   return new Promise((resolve, reject) => {
     if (!isValidGitHubPRUrl(url)) {
       setTimeout(() => {
@@ -48,4 +89,12 @@ export async function copyToClipboard(text) {
     console.error('复制失败:', err);
     return false;
   }
+}
+
+export function getApiConfig() {
+  return {
+    baseUrl: API_BASE_URL,
+    useMock: USE_MOCK_MODE,
+    mode: USE_MOCK_MODE ? 'mock' : 'production'
+  };
 }
