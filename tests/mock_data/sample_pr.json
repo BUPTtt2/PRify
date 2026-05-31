@@ -1,0 +1,120 @@
+{
+    "mock_pr_info": {
+        "number": 123,
+        "title": "feat: 添加用户认证功能",
+        "user": {
+            "login": "test-user",
+            "avatar_url": "https://example.com/avatar.png"
+        },
+        "state": "open",
+        "body": "添加用户认证功能，包括登录、注册和JWT token验证",
+        "additions": 200,
+        "deletions": 20,
+        "changed_files": 5,
+        "created_at": "2024-01-15T10:30:00Z",
+        "updated_at": "2024-01-15T14:20:00Z",
+        "mergeable": true
+    },
+    "mock_pr_files": [
+        {
+            "filename": "backend/auth/login.py",
+            "status": "added",
+            "additions": 50,
+            "deletions": 0,
+            "patch": "@@ -0,0 +1,50 @@\n+def login(username, password):\n+    # 登录逻辑\n+    pass"
+        },
+        {
+            "filename": "backend/auth/jwt.py",
+            "status": "added",
+            "additions": 80,
+            "deletions": 0,
+            "patch": "@@ -0,0 +1,80 @@\n+import jwt\n+SECRET_KEY = 'hardcoded_secret_key'  # 硬编码密钥\n+def create_token(user_id):\n+    return jwt.encode({'user_id': user_id}, SECRET_KEY)"
+        },
+        {
+            "filename": "backend/models/user.py",
+            "status": "modified",
+            "additions": 20,
+            "deletions": 20,
+            "patch": "@@ -10,10 +10,30 @@ class User:\n     email: str\n     created_at: datetime\n+\n+    def check_password(self, password: str) -> bool:\n+        return self.password_hash == password"
+        },
+        {
+            "filename": "tests/test_auth.py",
+            "status": "added",
+            "additions": 50,
+            "deletions": 0,
+            "patch": "@@ -0,0 +1,50 @@\n+import pytest\n+def test_login():\n+    assert True"
+        },
+        {
+            "filename": "backend/auth/register.py",
+            "status": "added",
+            "additions": 50,
+            "deletions": 0,
+            "patch": "@@ -0,0 +1,50 @@\n+def register(username, email, password):\n+    # 注册逻辑\n+    pass"
+        }
+    ],
+    "mock_diff": "diff --git a/backend/auth/login.py b/backend/auth/login.py\nindex 0000000..1234567 100644\n--- a/backend/auth/login.py\n+++ b/backend/auth/login.py\n@@ -0,0 +1,50 @@\n+def login(username, password):\n+    return {'success': True}\n",
+    "mock_llm_analysis": {
+        "summary": "本次变更主要是添加用户认证功能，包括登录页面、JWT token验证和密码加密模块。涉及5个文件的新增和修改。",
+        "risks": [
+            {
+                "level": "high",
+                "file": "backend/auth/jwt.py",
+                "line": "3",
+                "type": "security",
+                "description": "发现硬编码的密钥'SECRET_KEY'",
+                "suggestion": "使用环境变量替代硬编码密钥，提高安全性"
+            },
+            {
+                "level": "medium",
+                "file": "backend/models/user.py",
+                "line": "15-18",
+                "type": "logic",
+                "description": "check_password方法直接比较密码，可能存在安全隐患",
+                "suggestion": "使用密码哈希和盐值进行验证"
+            },
+            {
+                "level": "low",
+                "file": "backend/auth/login.py",
+                "line": "1-50",
+                "type": "performance",
+                "description": "登录函数没有实现缓存机制",
+                "suggestion": "考虑添加缓存提高性能"
+            }
+        ]
+    },
+    "mock_review_response": {
+        "success": true,
+        "data": {
+            "pr_info": {
+                "title": "feat: 添加用户认证功能",
+                "author": "test-user",
+                "state": "open",
+                "files_count": 5,
+                "additions": 200,
+                "deletions": 20
+            },
+            "summary": "本次变更主要是添加用户认证功能，包括登录页面、JWT token验证和密码加密模块。",
+            "risks": [
+                {
+                    "level": "high",
+                    "file": "backend/auth/jwt.py",
+                    "line": "3",
+                    "type": "security",
+                    "description": "发现硬编码的密钥",
+                    "suggestion": "使用环境变量替代"
+                },
+                {
+                    "level": "medium",
+                    "file": "backend/models/user.py",
+                    "line": "15-18",
+                    "type": "logic",
+                    "description": "密码验证方法存在安全隐患",
+                    "suggestion": "使用密码哈希验证"
+                }
+            ],
+            "total_files": 5,
+            "processing_time": 2.5
+        },
+        "error": null
+    }
+}
