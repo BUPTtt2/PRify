@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
-from ..models.schemas import PRReviewRequest, PRReviewResponse
-from ..services.analyzer_service import AnalyzerService
-from ..utils.exceptions import (
+from models.schemas import PRReviewRequest, PRReviewResponse
+from services.analyzer_service import AnalyzerService
+from utils.exceptions import (
     PRifyError,
     InvalidPRUrlError,
     GitHubAPIError,

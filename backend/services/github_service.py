@@ -2,8 +2,8 @@ import requests
 from typing import Dict, List, Optional, Any
 from urllib.parse import urljoin
 
-from backend.config import settings
-from backend.utils.exceptions import GitHubAPIError, PRNotFoundError, RateLimitError
+from config import settings
+from utils.exceptions import GitHubAPIError, PRNotFoundError, RateLimitError
 
 
 class GitHubService:
@@ -28,6 +28,7 @@ class GitHubService:
                 url=url,
                 headers=self.headers,
                 timeout=settings.github_timeout,
+                verify=False,
                 **kwargs
             )
             
@@ -57,7 +58,8 @@ class GitHubService:
             response = requests.get(
                 url,
                 headers=self.headers,
-                timeout=settings.github_timeout
+                timeout=settings.github_timeout,
+                verify=False
             )
             response.raise_for_status()
             return response.text
@@ -124,7 +126,8 @@ class GitHubService:
             response = requests.get(
                 urljoin(self.BASE_URL, "rate_limit"),
                 headers=self.headers,
-                timeout=settings.github_timeout
+                timeout=settings.github_timeout,
+                verify=False
             )
             response.raise_for_status()
             return response.json()
