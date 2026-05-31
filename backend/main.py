@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="PRify")
+from backend.routers import review
+
+app = FastAPI(title="PRify", version="1.0.0", description="AI PR Review Assistant")
 
 app.add_middleware(
     CORSMiddleware,
@@ -11,10 +13,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-@app.get("/health")
-async def health_check():
-    return {"status": "ok"}
+app.include_router(review.router, prefix="/api", tags=["review"])
 
 
 if __name__ == "__main__":
