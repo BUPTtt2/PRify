@@ -1,6 +1,6 @@
 import { mockReviewResponse, mockHealthCheck, mockErrorResponses } from './mock.js';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'http://localhost:8001';
 
 // 🔒 安全修复：只在localhost或development环境下启用Mock
 const IS_DEV_ENV = window.location.hostname === 'localhost' || 
