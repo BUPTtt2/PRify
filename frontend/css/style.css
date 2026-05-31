@@ -32,6 +32,22 @@
   transform: translateY(-2px);
 }
 
+.risk-group-header {
+  cursor: pointer;
+}
+
+.risk-group-header:hover {
+  opacity: 0.9;
+}
+
+.risk-chevron {
+  transition: transform 0.3s ease;
+}
+
+.risk-chevron.rotate-180 {
+  transform: rotate(180deg);
+}
+
 .fade-in {
   animation: fadeIn 0.5s ease-out;
 }
@@ -39,4 +55,8 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.copy-suggestion-btn {
+  cursor: pointer;
 }

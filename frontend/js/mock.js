@@ -25,6 +25,14 @@ export const mockReviewResponse = {
         type: "logic",
         description: "缺少登录失败重试次数限制",
         suggestion: "添加失败次数限制，防止暴力破解"
+      },
+      {
+        level: "low",
+        file: "src/utils/helpers.py",
+        line: "10-15",
+        type: "style",
+        description: "函数命名不够清晰",
+        suggestion: "使用更描述性的函数命名以提高代码可读性"
       }
     ],
     total_files: 5,
