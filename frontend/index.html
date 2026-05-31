@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRify — Code Review, Perfected.</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-stone-50 text-stone-800 antialiased">
+    <div class="min-h-screen flex flex-col">
+        <div class="flex-1 container mx-auto px-6 md:px-8 py-16 md:py-24">
+            <header class="mb-16 md:mb-20">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full bg-stone-800 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-stone-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M2 17l10 5 10-5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <h1 class="text-2xl font-light tracking-wide">PRify</h1>
+                    </div>
+                    <div id="health-status" class="flex items-center text-sm font-medium"></div>
+                </div>
+            </header>
+
+            <main class="max-w-2xl mx-auto">
+                <div class="text-center mb-12 md:mb-16">
+                    <h2 class="text-4xl md:text-5xl font-light mb-6 leading-tight">
+                        Code review, perfected.
+                    </h2>
+                    <p class="text-lg md:text-xl text-stone-500 font-light max-w-lg mx-auto">
+                        Smart PR analysis powered by artificial intelligence.
+                    </p>
+                </div>
+
+                <div class="mb-12 md:mb-16">
+                    <form id="review-form" class="space-y-6">
+                        <div class="relative">
+                            <div class="flex items-center space-x-3">
+                                <input
+                                    type="text"
+                                    id="pr-url"
+                                    placeholder="Paste GitHub PR URL"
+                                    class="w-full bg-white border border-stone-200 rounded-lg px-5 py-4 text-base md:text-lg placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-800 focus:border-transparent transition-all duration-300"
+                                    required
+                                >
+                                <button
+                                    type="submit"
+                                    id="analyze-btn"
+                                    class="flex-shrink-0 bg-stone-800 text-stone-50 rounded-lg px-6 py-4 text-base font-medium transition-all duration-300 hover:bg-stone-900 focus:ring-2 focus:ring-stone-800 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                                >
+                                    <span>Analyze</span>
+                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="loading-section" class="hidden">
+                    <div class="bg-white rounded-lg border border-stone-200 p-8 md:p-10">
+                        <div class="flex items-center justify-center space-x-4">
+                            <svg class="animate-spin w-5 h-5 text-stone-400" viewBox="0 0 24 24" fill="none">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                            </svg>
+                            <span class="text-stone-500 font-light">Processing with care…</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="result-section" class="hidden"></div>
+            </main>
+        </div>
+
+        <footer class="py-8 border-t border-stone-200">
+            <div class="container mx-auto px-6 md:px-8">
+                <p class="text-center text-stone-400 text-sm font-light">
+                    Crafted with precision.
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
