@@ -87,6 +87,18 @@ function showSimpleAlert(message) {
 function renderResult(data) {
   const { pr_info, summary, risks, total_files, processing_time } = data;
   
+  const groupedRisks = {
+    high: risks.filter(r => r.level === 'high'),
+    medium: risks.filter(r => r.level === 'medium'),
+    low: risks.filter(r => r.level === 'low')
+  };
+  
+  const riskLevels = [
+    { key: 'high', label: 'High Risk', color: 'rose', bgClass: 'bg-rose-50/50', borderClass: 'border-rose-200', badgeClass: 'bg-rose-100 text-rose-700' },
+    { key: 'medium', label: 'Medium Risk', color: 'amber', bgClass: 'bg-amber-50/50', borderClass: 'border-amber-200', badgeClass: 'bg-amber-100 text-amber-700' },
+    { key: 'low', label: 'Low Risk', color: 'sky', bgClass: 'bg-sky-50/50', borderClass: 'border-sky-200', badgeClass: 'bg-sky-100 text-sky-700' }
+  ];
+  
   resultSection.innerHTML = `
     <div class="bg-white rounded-lg border border-stone-200 fade-in">
       <div class="p-8 md:p-10 border-b border-stone-200">
@@ -104,19 +116,19 @@ function renderResult(data) {
               <svg class="w-4 h-4 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
               </svg>
-              <span>${pr_info.files_count} file${pr_info.files_count !== 1 ? 's' : ''}</span>
+              <span>Files: ${pr_info.files_count}</span>
             </div>
             <div class="flex items-center space-x-2">
               <svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M5 14l4-4 6 6 4-4"/>
               </svg>
-              <span>${pr_info.additions}</span>
+              <span>+${pr_info.additions}</span>
             </div>
             <div class="flex items-center space-x-2">
               <svg class="w-4 h-4 text-rose-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M5 10l4 4 6-6 4 4"/>
               </svg>
-              <span>${pr_info.deletions}</span>
+              <span>-${pr_info.deletions}</span>
             </div>
           </div>
         </div>
@@ -131,46 +143,52 @@ function renderResult(data) {
             <h3 class="text-sm font-medium text-stone-400 uppercase tracking-wider">Risk Assessment</h3>
             <span class="text-sm text-stone-500 font-light">${risks.length} item${risks.length !== 1 ? 's' : ''}</span>
           </div>
-          
-          <div class="space-y-4">
-            ${risks.map(risk => `
-              <div class="risk-card rounded-lg border p-6 ${
-                risk.level === 'high' 
-                  ? 'border-rose-200 bg-rose-50/50' 
-                  : risk.level === 'medium' 
-                    ? 'border-amber-200 bg-amber-50/50' 
-                    : 'border-sky-200 bg-sky-50/50'
-              }">
-                <div class="flex items-start justify-between mb-4">
-                  <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                    risk.level === 'high' 
-                      ? 'bg-rose-100 text-rose-700' 
-                      : risk.level === 'medium' 
-                        ? 'bg-amber-100 text-amber-700' 
-                        : 'bg-sky-100 text-sky-700'
-                  }">
-                    ${risk.level.charAt(0).toUpperCase() + risk.level.slice(1)}
-                  </span>
-                  <span class="text-xs text-stone-500 font-mono">${risk.file}:${risk.line}</span>
-                </div>
-                
-                <div class="space-y-3">
-                  <div>
-                    <p class="text-xs font-medium text-stone-400 uppercase tracking-wider mb-1.5">Type</p>
-                    <p class="text-stone-700">${risk.type}</p>
-                  </div>
-                  <div>
-                    <p class="text-xs font-medium text-stone-400 uppercase tracking-wider mb-1.5">Issue</p>
-                    <p class="text-stone-700">${risk.description}</p>
-                  </div>
-                  <div>
-                    <p class="text-xs font-medium text-stone-400 uppercase tracking-wider mb-1.5">Suggestion</p>
-                    <p class="text-stone-700">${risk.suggestion}</p>
-                  </div>
-                </div>
+
+          ${riskLevels.map(level => groupedRisks[level.key].length > 0 ? `
+          <div class="risk-group mb-6 last:mb-0">
+            <button class="risk-group-header w-full flex items-center justify-between p-4 rounded-lg border ${level.borderClass} ${level.bgClass} hover:opacity-80 transition-opacity duration-200" data-risk-level="${level.key}">
+              <div class="flex items-center space-x-3">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${level.badgeClass}">
+                  ${level.label}
+                </span>
+                <span class="text-sm text-stone-500">${groupedRisks[level.key].length} item${groupedRisks[level.key].length !== 1 ? 's' : ''}</span>
               </div>
-            `).join('')}
+              <svg class="risk-chevron w-5 h-5 text-stone-400 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </button>
+            <div class="risk-group-content hidden mt-3 pl-2 space-y-3" data-risk-level="${level.key}">
+              ${groupedRisks[level.key].map((risk, index) => `
+                <div class="risk-card rounded-lg border ${level.borderClass} ${level.bgClass} p-5">
+                  <div class="flex items-start justify-between mb-3">
+                    <span class="text-xs text-stone-500 font-mono">${risk.file}:${risk.line}</span>
+                    <button class="copy-suggestion-btn text-stone-400 hover:text-stone-600 transition-colors duration-200 p-1" data-suggestion="${escapeHtml(risk.suggestion)}" title="Copy suggestion">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="9" y="9" width="13" height="13" rx="2"/>
+                        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div class="space-y-2.5">
+                    <div class="flex items-start space-x-2">
+                      <span class="text-xs font-medium text-stone-400 uppercase tracking-wider mt-0.5">Type</span>
+                      <span class="text-sm text-stone-700">${risk.type}</span>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                      <span class="text-xs font-medium text-stone-400 uppercase tracking-wider mt-0.5">Issue</span>
+                      <span class="text-sm text-stone-700">${risk.description}</span>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                      <span class="text-xs font-medium text-stone-400 uppercase tracking-wider mt-0.5">Suggestion</span>
+                      <span class="text-sm text-stone-700">${risk.suggestion}</span>
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
           </div>
+          ` : '').join('')}
         </div>
       </div>
 
@@ -197,10 +215,57 @@ function renderResult(data) {
 
   resultSection.classList.remove('hidden');
   
+  setupRiskGroupListeners();
+  setupCopySuggestionListeners();
+  
   const copyBtn = document.getElementById('copy-btn');
   if (copyBtn) {
     copyBtn.addEventListener('click', () => handleCopy(data));
   }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function setupRiskGroupListeners() {
+  document.querySelectorAll('.risk-group-header').forEach(header => {
+    header.addEventListener('click', () => {
+      const level = header.getAttribute('data-risk-level');
+      const content = document.querySelector(`.risk-group-content[data-risk-level="${level}"]`);
+      const chevron = header.querySelector('.risk-chevron');
+
+      content.classList.toggle('hidden');
+      chevron.classList.toggle('rotate-180');
+    });
+  });
+}
+
+function setupCopySuggestionListeners() {
+  document.querySelectorAll('.copy-suggestion-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const suggestion = btn.getAttribute('data-suggestion');
+      const success = await navigator.clipboard.writeText(suggestion);
+
+      if (success !== false) {
+        btn.innerHTML = `
+          <svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M5 13l4 4L19 7"/>
+          </svg>
+        `;
+        setTimeout(() => {
+          btn.innerHTML = `
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="9" y="9" width="13" height="13" rx="2"/>
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+            </svg>
+          `;
+        }, 2000);
+      }
+    });
+  });
 }
 
 async function handleCopy(data) {
